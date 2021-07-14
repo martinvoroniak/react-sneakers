@@ -1,8 +1,10 @@
-import React from 'react'
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-function Header() {
+function Header(props) {
     return (
         <header>
+            <Link to='/'>
                 <div className='headerLeft'>
                     <img
                         width={50}
@@ -15,27 +17,38 @@ function Header() {
                         <p>Магазин найкращих кросівок</p>
                     </div>
                 </div>
-                <ul className='headerRight'>
-                    <li>
+            </Link>
+            <ul className='headerRight'>
+                <li onClick={props.onClickCart}>
+                    <img
+                        width={18}
+                        height={18}
+                        src='/img/cart.svg'
+                        alt='Корзина'
+                    />
+                    <span>1300 грн</span>
+                </li>
+                <li>
+                    <Link to='/favorites'>
                         <img
                             width={18}
                             height={18}
-                            src='/img/cart.svg'
-                            alt='cart'
+                            src='/img/heart.svg'
+                            alt='Закладки'
                         />
-                        <span>1300 грн</span>
-                    </li>
-                    <li>
-                        <img
-                            width={18}
-                            height={18}
-                            src='/img/user.svg'
-                            alt='user'
-                        />
-                    </li>
-                </ul>
-            </header>
-    )
+                    </Link>
+                </li>
+                <li>
+                    <img
+                        width={18}
+                        height={18}
+                        src='/img/user.svg'
+                        alt='Користувач'
+                    />
+                </li>
+            </ul>
+        </header>
+    );
 }
 
-export default Header
+export default Header;
