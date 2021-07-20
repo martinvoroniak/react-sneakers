@@ -7,6 +7,7 @@ import Drawer from './components/Drawer';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Favorites from './pages/Favorites';
+import Orders from './pages/Orders';
 
 function App() {
   const [items, setItems] = React.useState([]);
@@ -18,56 +19,78 @@ function App() {
 
   React.useEffect(() => {
     async function fethData() {
-      const cartResponse = await axios.get('https://60d382a561160900173c9403.mockapi.io/cart');
-      const favoritesResponse = await axios.get(
-        'https://60d382a561160900173c9403.mockapi.io/favorites',
-      );
-      const itemsResponse = await axios.get('https://60d382a561160900173c9403.mockapi.io/items');
+      try {
+        const cartResponse = await axios.get('https://60d382a561160900173c9403.mockapi.io/cart');
+        const favoritesResponse = await axios.get(
+          'https://60d382a561160900173c9403.mockapi.io/favorites',
+        );
+        const itemsResponse = await axios.get('https://60d382a561160900173c9403.mockapi.io/items');
 
-      setIsLoading(false);
-
-      setCartItems(cartResponse.data);
-      setFavorites(favoritesResponse.data);
-      setItems(itemsResponse.data);
+        setIsLoading(false);
+        setCartItems(cartResponse.data);
+        setFavorites(favoritesResponse.data);
+        setItems(itemsResponse.data);
+      } catch (error) {
+        alert('Не можу отримати дані з сервера ...');
+        console.error(error);
+      }
     }
-
     fethData();
   }, []);
 
-  const onAddToCart = (obj) => {
+  const onAddToCart = async (obj) => {
     try {
-      if (favorites.find((item) => Number(item.id) === Number(obj.id))) {
-        axios.delete(`https://60d382a561160900173c9403.mockapi.io/cart/${obj.id}`);
-        setCartItems((prev) => prev.filter((item) => Number(item.id) !== Number(obj.id)));
+      const findItem = favorites.find((item) => Number(item.perentId) === Number(obj.id));
+      if (findItem) {
+        setCartItems((prev) => prev.filter((item) => Number(item.perentId) !== Number(obj.id)));
+        await axios.delete(`https://60d382a561160900173c9403.mockapi.io/cart/${findItem.id}`);
       } else {
-        axios.post('https://60d382a561160900173c9403.mockapi.io/cart', obj);
         setCartItems((prev) => [...prev, obj]);
+        const { data } = await axios.post('https://60d382a561160900173c9403.mockapi.io/cart', obj);
+        setCartItems((prev) =>
+          prev.map((item) => {
+            if (item.perentId === data.perentId) {
+              return {
+                ...item,
+                id: data.id,
+              };
+            }
+            return item;
+          }),
+        );
       }
     } catch (error) {
-      alert(error);
+      alert('Упс... Не зміг добавити в корзину :(');
+      console.error(error);
     }
   };
 
   const onAddToFavorites = async (obj) => {
     try {
-      if (favorites.find((favObj) => favObj.id === obj.id)) {
-        axios.delete(`https://60d382a561160900173c9403.mockapi.io/favorites/${obj.id}`);
+      if (favorites.find((favObj) => Number(favObj.id) === Number(obj.id))) {
         setFavorites((prev) => prev.filter((item) => Number(item.id) !== Number(obj.id)));
+        await axios.delete(`https://60d382a561160900173c9403.mockapi.io/favorites/${obj.id}`);
       } else {
+        setFavorites((prev) => [...prev, data]);
         const { data } = await axios.post(
           'https://60d382a561160900173c9403.mockapi.io/favorites',
           obj,
         );
-        setFavorites((prev) => [...prev, data]);
       }
     } catch (error) {
       alert('не зміг добавити в закладки');
+      console.error(error);
     }
   };
 
-  const onRemoveItem = (id) => {
-    axios.delete(`https://60d382a561160900173c9403.mockapi.io/cart/${id}`);
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const onRemoveItem = async (id) => {
+    try {
+      setCartItems((prev) => prev.filter((item) => item.id !== id));
+      await axios.delete(`https://60d382a561160900173c9403.mockapi.io/cart/${id}`);
+    } catch (error) {
+      alert('Не зміг видалити з корзини...');
+      console.error(error);
+    }
   };
 
   const onChangeSearchInput = (event) => {
@@ -79,7 +102,7 @@ function App() {
   };
 
   const isItemAdded = (id) => {
-    return cartItems.some((obj) => Number(obj.id) === Number(id));
+    return cartItems.some((obj) => Number(obj.perentId) === Number(id));
   };
 
   return (
@@ -91,11 +114,16 @@ function App() {
         isItemAdded,
         onAddToFavorites,
         setCartOpened,
+        setCartItems,
       }}>
       <div className="wrapper clear">
-        {cartOpened && (
-          <Drawer items={cartItems} onClose={() => setCartOpened(false)} onRemove={onRemoveItem} />
-        )}
+        <Drawer
+          items={cartItems}
+          onClose={() => setCartOpened(false)}
+          onRemove={onRemoveItem}
+          opened={cartOpened}
+        />
+
         <Header onClickCart={() => setCartOpened(true)} />
 
         <Route path="/" exact>
@@ -113,6 +141,10 @@ function App() {
 
         <Route path="/favorites">
           <Favorites />
+        </Route>
+
+        <Route path="/orders">
+          <Orders />
         </Route>
       </div>
     </AppContext.Provider>
